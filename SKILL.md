@@ -1,6 +1,6 @@
 ---
 name: wechat-favorites-to-ima
-description: Use in Codex Desktop with Computer Use when migrating WeChat Favorites articles into ima.copilot knowledge bases. Codex should operate the WeChat and ima desktop UIs with Computer Use, extract only trusted article URLs by right-clicking WeChat Favorites list items, filter mp.weixin.qq.com/s links, deduplicate them, and import them through ima's "网页链接" batch importer.
+description: Use in Codex Desktop with Computer Use on macOS when migrating WeChat Favorites articles into ima.copilot knowledge bases. This workflow is tested on Mac. Codex should operate the WeChat and ima desktop UIs with Computer Use, extract only trusted article URLs by right-clicking WeChat Favorites list items, filter mp.weixin.qq.com/s links, deduplicate them, and import them through ima's "网页链接" batch importer.
 ---
 
 # WeChat Favorites To ima
@@ -11,11 +11,12 @@ Move WeChat Favorites articles into an ima knowledge base with minimal user invo
 
 The trusted source is the WeChat Favorites UI itself. Do not mine WeChat cache, WebView history, browser history, or local databases as the final source because those URLs may not belong to the user's Favorites.
 
-This skill is designed for Codex Desktop plus Computer Use:
+This skill is designed and tested on Mac with Codex Desktop plus Computer Use:
 
 - Use Computer Use to operate WeChat and ima desktop windows.
 - Use shell or the bundled CLI only for local cleaning, deduplication, and batch file generation.
 - The CLI cannot read WeChat Favorites or import into ima by itself; UI automation is part of the skill.
+- macOS is the tested platform. Other desktop platforms are not validated by this skill.
 
 ## Usage Example
 
@@ -29,6 +30,7 @@ Use $wechat-favorites-to-ima in Codex Desktop with Computer Use to operate WeCha
 - ima.copilot is logged in and the target knowledge base is open.
 - Codex Desktop can use Computer Use to click, right-click, scroll, paste, and inspect the WeChat and ima UIs.
 - macOS Screen Recording and Accessibility permissions are enabled for the agent/tooling.
+- The workflow has been tested on macOS with WeChat desktop and ima.copilot desktop.
 - The user has opened WeChat Favorites and selected the relevant category, usually "链接".
 - Operate only on the main display unless the user explicitly asks otherwise.
 

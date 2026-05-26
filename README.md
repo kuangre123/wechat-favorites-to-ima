@@ -2,6 +2,8 @@
 
 这个 Skill 用于让 **Codex Desktop 配合 Computer Use** 操作微信和 ima，把微信收藏夹里的公众号文章导入到 ima.copilot 知识库。
 
+当前流程已在 **macOS / Mac 桌面端** 测试通过。Skill 依赖 macOS 的屏幕录制、辅助功能权限和桌面 App 操作能力；其他平台暂未验证。
+
 核心原则：**只信微信收藏列表右键复制出来的链接**。不要从微信缓存、WebView 历史、本地数据库或浏览器历史里批量抓 `mp.weixin.qq.com`，因为那些链接不一定属于用户收藏夹。
 
 ## 使用示例
@@ -9,13 +11,13 @@
 可以把下面这段填到 Skill 平台的“使用示例”里：
 
 ```text
-使用 $wechat-favorites-to-ima，在 Codex Desktop 中调用 Computer Use 操作微信和 ima：从微信收藏夹“链接”列表右键复制全部公众号文章链接，只保留 mp.weixin.qq.com/s，去重后按 ima“网页链接”每批 10 条导入。
+使用 $wechat-favorites-to-ima，在 macOS 的 Codex Desktop 中调用 Computer Use 操作微信和 ima：从微信收藏夹“链接”列表右键复制全部公众号文章链接，只保留 mp.weixin.qq.com/s，去重后按 ima“网页链接”每批 10 条导入。
 ```
 
 如果是不支持 `$skill-name` 的普通说明框，可以写：
 
 ```text
-在 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，过滤 mp.weixin.qq.com/s，读取全部数据并去重，再按 ima 网页链接每批 10 条批量导入。
+在 macOS 的 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，过滤 mp.weixin.qq.com/s，读取全部数据并去重，再按 ima 网页链接每批 10 条批量导入。本流程已在 Mac 测试通过。
 ```
 
 ## 能力边界
@@ -27,6 +29,7 @@
 ## 适用场景
 
 - 用户已经登录微信桌面版和 ima。
+- 用户使用 macOS / Mac 桌面环境。
 - 用户在 Codex Desktop 中启用了 Computer Use。
 - 用户要导入微信收藏夹里的公众号文章。
 - 用户希望尽量无人参与，不想逐条手动复制、打开文章。
