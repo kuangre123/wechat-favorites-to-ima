@@ -8,6 +8,12 @@
 
 ## 使用示例
 
+可以使用这个提示词发给 Codex：
+
+```text
+使用这个 skill 实现：codex 读取微信收藏夹并存入 ima。 [kuangre123/wechat-favorites-to-ima](https://github.com/kuangre123/wechat-favorites-to-ima)
+```
+
 可以把下面这段填到 Skill 平台的“使用示例”里：
 
 ```text

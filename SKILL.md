@@ -110,7 +110,7 @@ python3 scripts/clean_wechat_links.py links.txt wechat_favorite_articles.md
 
 ## ima Import Workflow
 
-ima's "网页链接" dialog supports multiple links separated by newlines, usually up to 10 links per batch. Always read all cleaned links and split them dynamically; do not hard-code example counts such as 17.
+ima's "网页链接" dialog supports multiple links separated by newlines, usually up to 10 links per batch. Always read all cleaned links and split them dynamically; do not hard-code the total link count.
 
 1. Open the target knowledge base in ima.
 2. Click the top-right add/upload button.
