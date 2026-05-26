@@ -1,0 +1,7 @@
+interface:
+  display_name: "WeChat Favorites to ima"
+  short_description: "用 Codex + Computer Use 同步微信收藏文章"
+  default_prompt: "Use $wechat-favorites-to-ima in Codex Desktop with Computer Use to operate WeChat and ima, read all WeChat Favorites article links, deduplicate mp.weixin.qq.com/s URLs, and import them into ima in batches."
+
+policy:
+  allow_implicit_invocation: true
