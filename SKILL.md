@@ -76,10 +76,11 @@ Recommended files:
 
 ```txt
 links.txt
+links_full_raw.txt
 wechat_favorite_articles.md
 ```
 
-`links.txt` is append-only raw copied output. `wechat_favorite_articles.md` is the cleaned deduplicated import manifest.
+`links_full_raw.txt` is append-only raw copied output across multiple sessions. `wechat_favorite_articles.md` is the cleaned deduplicated import manifest for links already imported into ima.
 
 ## Cleaning Rules
 
@@ -107,6 +108,16 @@ If the CLI is not installed, use the compatibility script:
 ```sh
 python3 scripts/clean_wechat_links.py links.txt wechat_favorite_articles.md
 ```
+
+For multi-session imports, track progress and create only-new pending batches:
+
+```sh
+wechat-favorites-progress tmp/wechat_favorites_export/links_full_raw.txt \
+  --imported wechat_favorite_articles.md \
+  --output-dir tmp/wechat_favorites_export
+```
+
+Only import files under `pending_batches/`. After ima accepts those links, merge the successful links into `wechat_favorite_articles.md` so the next run can skip duplicates.
 
 ## ima Import Workflow
 

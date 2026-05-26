@@ -145,6 +145,40 @@ batch_002.txt
 
 每个批次文件都是换行分隔链接，可以直接粘贴到 ima。
 
+## 进度记录与防重复导入
+
+如果要分多次抓取收藏夹，建议把每次右键复制得到的原始内容持续追加到同一个文件，例如：
+
+```txt
+tmp/wechat_favorites_export/links_full_raw.txt
+```
+
+已经导入 ima 的清单继续保存在：
+
+```txt
+wechat_favorite_articles.md
+```
+
+然后运行：
+
+```sh
+wechat-favorites-progress tmp/wechat_favorites_export/links_full_raw.txt \
+  --imported wechat_favorite_articles.md \
+  --output-dir tmp/wechat_favorites_export
+```
+
+它会生成：
+
+```txt
+tmp/wechat_favorites_export/progress.json
+tmp/wechat_favorites_export/progress.md
+tmp/wechat_favorites_export/full_articles.md
+tmp/wechat_favorites_export/pending_articles.md
+tmp/wechat_favorites_export/pending_batches/batch_001.txt
+```
+
+`pending_batches/` 只包含“已抓取但尚未在导入清单里出现”的新增公众号文章链接。下一次导入 ima 时只粘贴这些 pending 批次，导入完成后再把成功导入的链接合并进 `wechat_favorite_articles.md` 作为新的基线。
+
 ## ima 导入限制与分批
 
 ima 的“网页链接”导入框支持多条链接换行输入，但通常一次最多 10 条。

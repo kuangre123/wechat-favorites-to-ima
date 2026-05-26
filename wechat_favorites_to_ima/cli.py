@@ -29,8 +29,8 @@ def extract_links(text: str) -> list[str]:
     return links
 
 
-def render_markdown(links: list[str]) -> str:
-    lines = ["# 微信收藏文章", ""]
+def render_markdown(links: list[str], title: str = "微信收藏文章") -> str:
+    lines = [f"# {title}", ""]
     lines.extend(f"{idx}. {url}" for idx, url in enumerate(links, 1))
     lines.append("")
     return "\n".join(lines)
