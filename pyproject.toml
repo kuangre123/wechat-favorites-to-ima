@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wechat-favorites-to-ima"
+version = "0.1.0"
+description = "Clean WeChat Favorites article links and prepare ima batch import files."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "kuangre123" }
+]
+keywords = ["wechat", "ima", "knowledge-base", "codex-skill"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Text Processing"
+]
+
+[project.urls]
+Homepage = "https://github.com/kuangre123/wechat-favorites-to-ima"
+Repository = "https://github.com/kuangre123/wechat-favorites-to-ima"
+
+[project.scripts]
+wechat-favorites-to-ima = "wechat_favorites_to_ima.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["wechat_favorites_to_ima*"]

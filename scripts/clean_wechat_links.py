@@ -1,39 +1,12 @@
 #!/usr/bin/env python3
-import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-LINK_RE = re.compile(r"https://mp\.weixin\.qq\.com/s(?:/[A-Za-z0-9_-]+|\?[^\s]+)")
-PREFIX = "https://mp.weixin.qq.com/s"
-
-
-def clean_link(url: str) -> str:
-    url = url.strip()
-    embedded = url.find(PREFIX, len(PREFIX))
-    if embedded > 0:
-        url = url[:embedded]
-    if url.startswith(PREFIX + "/") and url.endswith("https"):
-        url = url[:-5]
-    return url
-
-
-def extract_links(text: str) -> list[str]:
-    seen = set()
-    links = []
-    for match in LINK_RE.finditer(text):
-        url = clean_link(match.group(0))
-        if url and url not in seen:
-            seen.add(url)
-            links.append(url)
-    return links
-
-
-def render_markdown(links: list[str]) -> str:
-    lines = ["# 微信收藏文章", ""]
-    lines.extend(f"{idx}. {url}" for idx, url in enumerate(links, 1))
-    lines.append("")
-    return "\n".join(lines)
+from wechat_favorites_to_ima.cli import extract_links, render_markdown
 
 
 def main() -> int:
