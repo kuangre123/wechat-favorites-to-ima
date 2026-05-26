@@ -23,7 +23,8 @@
 如果是不支持 `$skill-name` 的普通说明框，可以写：
 
 ```text
-在 macOS 的 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，过滤 mp.weixin.qq.com/s，读取全部数据并去重，再按 ima 网页链接每批 10 条批量导入。本流程已在 Mac 测试通过。
+在 macOS 的 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，
+使用这个 skill 实现：codex 读取微信收藏夹并存入 ima。 [kuangre123/wechat-favorites-to-ima](https://github.com/kuangre123/wechat-favorites-to-ima)
 ```
 
 ## 能力边界
