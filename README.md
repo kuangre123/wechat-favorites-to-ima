@@ -23,15 +23,56 @@
 如果是不支持 `$skill-name` 的普通说明框，可以写：
 
 ```text
-在 macOS 的 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，
-使用这个 skill 实现：codex 读取微信收藏夹并存入 ima。 [kuangre123/wechat-favorites-to-ima](https://github.com/kuangre123/wechat-favorites-to-ima)
+在 macOS 的 Codex Desktop 中使用 Computer Use 自动操作微信收藏夹和 ima：从收藏列表右键复制公众号文章链接，过滤 mp.weixin.qq.com/s，读取全部数据并去重，再按 ima 网页链接每批 10 条批量导入。本流程已在 Mac 测试通过。
 ```
 
 ## 能力边界
 
 - Codex + Computer Use 负责操作微信和 ima 的界面，包括右键、复制链接、滚动、粘贴和点击导入。
-- CLI 只负责清洗 `links.txt`、去重和生成 Markdown/批次文件。
-- CLI 不能单独读取微信收藏，也不能单独完成 ima 导入。
+- 仓库内的 macOS runner 可以编译并执行采集、去重、断点记录和 ima 批量导入。
+- CLI 仍可单独用于清洗 `links.txt`、去重和生成 Markdown/批次文件。
+- 不读取微信数据库、缓存、WebView 或浏览器历史。
+
+## 高速自动同步
+
+克隆仓库后，在微信中打开“收藏 → 链接”，并在 ima 中打开目标知识库：
+
+```sh
+scripts/wechat_ima_fast_sync.sh compile
+TARGET=100 scripts/wechat_ima_fast_sync.sh all
+```
+
+默认使用 `fast` 模式。已成功校准且界面稳定时可改用：
+
+```sh
+TARGET=100 CAPTURE_MODE=turbo IMPORT_MODE=turbo scripts/wechat_ima_fast_sync.sh all
+```
+
+runner 的关键行为：
+
+- 已达到目标数量时直接退出，不激活微信或 ima。
+- 微信每次运行只激活一次；优先使用进程内鼠标事件，失败后自动切换到 `cliclick`。
+- `capture_state.json` 只保存收藏行的哈希指纹，后续运行直接跳过已处理行。
+- `imported_links.txt` 和 `pending_links.txt` 分开记录已导入与待导入链接。
+- ima 每批最多导入 10 条；已记账链接不会再次提交。
+- `import_inflight.json` 记录提交阶段。中断位置不明确时不会自动重试，防止重复。
+- `.sync.lock` 阻止两个同步任务同时操作桌面应用。
+- Holo3.1 或其他本地模型不参与主流程，也不需要安装。
+
+查看进度但不操作桌面应用：
+
+```sh
+scripts/wechat_ima_fast_sync.sh refresh
+```
+
+如果上次在点击 ima“导入”附近中断，先检查该批是否已出现在 ima，再明确恢复方式：
+
+```sh
+RESOLVE_INFLIGHT=submitted scripts/wechat_ima_fast_sync.sh import
+RESOLVE_INFLIGHT=retry scripts/wechat_ima_fast_sync.sh import
+```
+
+更多实现与恢复说明见 [`docs/fast-sync.md`](docs/fast-sync.md)。
 
 ## 适用场景
 
@@ -217,12 +258,23 @@ ima 的“网页链接”导入框支持多条链接换行输入，但通常一�
 wechat-favorites-to-ima/
 ├── agents/
 │   └── openai.yaml
+├── docs/
+│   └── fast-sync.md
 ├── SKILL.md
 ├── README.md
 ├── pyproject.toml
+├── tests/
+│   ├── test_cli.py
+│   ├── test_progress_cli.py
+│   └── test_wechat_favorites_progress.py
 ├── wechat_favorites_to_ima/
 │   ├── __init__.py
-│   └── cli.py
+│   ├── cli.py
+│   └── progress.py
 └── scripts/
-    └── clean_wechat_links.py
+    ├── clean_wechat_links.py
+    ├── ima_import_batches.swift
+    ├── wechat_favorites_capture.swift
+    ├── wechat_favorites_progress.py
+    └── wechat_ima_fast_sync.sh
 ```

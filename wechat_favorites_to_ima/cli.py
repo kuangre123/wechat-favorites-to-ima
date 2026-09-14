@@ -1,21 +1,39 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import re
+import tempfile
 from pathlib import Path
 
 
-LINK_RE = re.compile(r"https://mp\.weixin\.qq\.com/s(?:/[A-Za-z0-9_-]+|\?[^\s]+)")
+LINK_RE = re.compile(r"https?://mp\.weixin\.qq\.com/s(?:/[A-Za-z0-9_-]+|\?[^\s]+)")
 PREFIX = "https://mp.weixin.qq.com/s"
 
 
 def clean_link(url: str) -> str:
     url = url.strip()
+    if url.startswith("http://mp.weixin.qq.com/s"):
+        url = "https://" + url[len("http://") :]
     embedded = url.find(PREFIX, len(PREFIX))
     if embedded > 0:
         url = url[:embedded]
     if url.startswith(PREFIX + "/") and url.endswith("https"):
         url = url[:-5]
     return url
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, path)
+    finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
 
 
 def extract_links(text: str) -> list[str]:
@@ -42,8 +60,12 @@ def write_batches(links: list[str], batch_dir: Path, batch_size: int) -> list[Pa
     for idx in range(0, len(links), batch_size):
         batch_no = idx // batch_size + 1
         path = batch_dir / f"batch_{batch_no:03d}.txt"
-        path.write_text("\n".join(links[idx : idx + batch_size]) + "\n", encoding="utf-8")
+        atomic_write_text(path, "\n".join(links[idx : idx + batch_size]) + "\n")
         written.append(path)
+    keep = set(written)
+    for stale in batch_dir.glob("batch_*.txt"):
+        if stale not in keep:
+            stale.unlink()
     return written
 
 
@@ -80,7 +102,7 @@ def main() -> int:
 
     text = args.source.read_text(encoding="utf-8")
     links = extract_links(text)
-    args.output.write_text(render_markdown(links), encoding="utf-8")
+    atomic_write_text(args.output, render_markdown(links))
 
     print(f"{len(links)} unique WeChat article links -> {args.output}")
     if args.batch_dir:

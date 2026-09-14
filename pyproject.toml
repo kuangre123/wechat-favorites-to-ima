@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wechat-favorites-to-ima"
-version = "0.1.1"
+version = "0.2.0"
 description = "Clean WeChat Favorites article links and prepare ima batch import files."
 readme = "README.md"
 requires-python = ">=3.9"

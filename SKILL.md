@@ -42,6 +42,7 @@ Use $wechat-favorites-to-ima in Codex Desktop with Computer Use to operate WeCha
   - `https://mp.weixin.qq.com/s?...`
 - Skip App Store links, GitHub links, normal websites, video accounts, chat records, files, and empty clipboard results.
 - Do not open articles as the primary extraction path.
+- Do not print copied article URLs or article contents in chat; report only counts, status, and failures.
 
 ## Fast Extraction Workflow
 
@@ -52,6 +53,42 @@ Use $wechat-favorites-to-ima in Codex Desktop with Computer Use to operate WeCha
 5. Scroll the Favorites list and repeat until done.
 6. Deduplicate and clean malformed copied text.
 7. Import into ima using "添加链接 / 上传 -> 网页链接".
+
+## Preferred Fast Runner
+
+When this repository is available on macOS, prefer its compiled runner over manually repeating Computer Use calls:
+
+```sh
+scripts/wechat_ima_fast_sync.sh compile
+TARGET=100 CAPTURE_MODE=fast IMPORT_MODE=fast scripts/wechat_ima_fast_sync.sh all
+```
+
+The runner still follows the trusted-source rule: links come only from right-clicking rows in the visible WeChat Favorites UI. It does not read WeChat databases, caches, or browsing history.
+
+The fast path is deterministic and does not use Holo3.1 or another local model. It gains speed by:
+
+- activating WeChat once per run;
+- waiting for actual menu and clipboard state changes;
+- storing hashed row fingerprints in `capture_state.json` and skipping processed rows;
+- keeping append-only captured links separate from imported links;
+- importing only pending links and skipping already recorded URLs;
+- recording an in-flight ima batch before submission;
+- preventing concurrent UI automation with a local lock.
+
+Use `turbo` only after `fast` has completed successfully with the current window layout. Use `safe` if the UI is slow or native events are unreliable.
+
+To inspect progress without touching either app:
+
+```sh
+scripts/wechat_ima_fast_sync.sh refresh
+```
+
+If `import_inflight.json` says a batch may have been submitted, do not retry it automatically. Check ima first, then use exactly one explicit recovery choice:
+
+```sh
+RESOLVE_INFLIGHT=submitted scripts/wechat_ima_fast_sync.sh import
+RESOLVE_INFLIGHT=retry scripts/wechat_ima_fast_sync.sh import
+```
 
 ## Coordinate Strategy
 
@@ -77,10 +114,15 @@ Recommended files:
 ```txt
 links.txt
 links_full_raw.txt
+links_unique.txt
+imported_links.txt
+pending_links.txt
+capture_state.json
+progress.json
 wechat_favorite_articles.md
 ```
 
-`links_full_raw.txt` is append-only raw copied output across multiple sessions. `wechat_favorite_articles.md` is the cleaned deduplicated import manifest for links already imported into ima.
+`links_full_raw.txt` is append-only copied output across sessions. `imported_links.txt` is the runner's durable no-repeat ledger. `wechat_favorite_articles.md` remains the CLI-compatible Markdown manifest for links already imported into ima.
 
 ## Cleaning Rules
 

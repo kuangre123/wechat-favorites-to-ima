@@ -1,7 +1,7 @@
 interface:
   display_name: "WeChat Favorites to ima"
-  short_description: "Mac 测试通过：Codex + Computer Use 同步微信收藏"
-  default_prompt: "Use $wechat-favorites-to-ima on macOS in Codex Desktop with Computer Use to operate WeChat and ima, read all WeChat Favorites article links, deduplicate mp.weixin.qq.com/s URLs, and import them into ima in batches."
+  short_description: "Mac 高速同步微信收藏到 ima，支持去重与断点恢复"
+  default_prompt: "Use $wechat-favorites-to-ima on macOS to run the deterministic fast sync: read trusted article links from the visible WeChat Favorites UI, deduplicate mp.weixin.qq.com/s URLs, remember processed rows and imported links, and import only pending links into ima in batches of 10. Do not use a local model."
 
 policy:
   allow_implicit_invocation: true

@@ -3,7 +3,12 @@ import argparse
 import json
 from pathlib import Path
 
-from wechat_favorites_to_ima.cli import extract_links, render_markdown, write_batches
+from wechat_favorites_to_ima.cli import (
+    atomic_write_text,
+    extract_links,
+    render_markdown,
+    write_batches,
+)
 
 
 def read_links(path: Path) -> list[str]:
@@ -24,19 +29,17 @@ def write_progress(
     pending_links = [url for url in captured_links if url not in imported_seen]
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "full_articles.md").write_text(
+    atomic_write_text(
+        output_dir / "full_articles.md",
         render_markdown(captured_links, title="微信收藏文章 - 已抓取"),
-        encoding="utf-8",
     )
-    (output_dir / "pending_articles.md").write_text(
+    atomic_write_text(
+        output_dir / "pending_articles.md",
         render_markdown(pending_links, title="微信收藏文章 - 新增待导入"),
-        encoding="utf-8",
     )
 
     pending_batch_dir = output_dir / "pending_batches"
     pending_batch_dir.mkdir(parents=True, exist_ok=True)
-    for old_file in pending_batch_dir.glob("batch_*.txt"):
-        old_file.unlink()
     batch_files = write_batches(pending_links, pending_batch_dir, batch_size)
 
     raw_text = raw_path.read_text(encoding="utf-8") if raw_path.exists() else ""
@@ -51,11 +54,12 @@ def write_progress(
         "duplicate_or_existing_count": max(len(captured_links) - len(pending_links), 0),
         "pending_batch_files": [str(path) for path in batch_files],
     }
-    (output_dir / "progress.json").write_text(
+    atomic_write_text(
+        output_dir / "progress.json",
         json.dumps(progress, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
     )
-    (output_dir / "progress.md").write_text(
+    atomic_write_text(
+        output_dir / "progress.md",
         "\n".join(
             [
                 "# 微信收藏夹导入进度",
@@ -71,7 +75,6 @@ def write_progress(
                 "",
             ]
         ),
-        encoding="utf-8",
     )
     return progress
 
