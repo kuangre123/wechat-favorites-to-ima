@@ -2,9 +2,11 @@
 import ApplicationServices
 import AppKit
 import Foundation
+import ImageIO
 
 let appBundleID = "com.tencent.imamac"
 var cachedImaAxApp: AXUIElement?
+var cachedMainFrame: CGRect?
 
 struct Options {
     var exportDir = URL(fileURLWithPath: "tmp/wechat_favorites_export")
@@ -248,6 +250,115 @@ func freshAxApp() -> AXUIElement {
     return element
 }
 
+func activateMainWindowRect() -> CGRect? {
+    let app = runningIma()
+    app.activate()
+    _ = waitUntil(timeoutSeconds: 0.8, interval: 20_000) { app.isActive }
+    let axApp = freshAxApp()
+    guard let window = mainWindow(in: axApp) else {
+        return cachedMainFrame
+    }
+    _ = AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+    usleep(80_000)
+    if let rect = frame(of: window), rect.width > 300, rect.height > 300 {
+        cachedMainFrame = rect
+        return rect
+    }
+    return cachedMainFrame
+}
+
+func contentAddPoint(in rect: CGRect) -> CGPoint {
+    CGPoint(x: rect.minX + min(rect.width - 96, 714), y: rect.minY + 168)
+}
+
+func webLinkMenuPoint(in rect: CGRect) -> CGPoint {
+    let addPoint = contentAddPoint(in: rect)
+    return CGPoint(x: addPoint.x + 35, y: addPoint.y + 187)
+}
+
+func dialogTextPoint(in rect: CGRect) -> CGPoint {
+    CGPoint(x: rect.minX + rect.width * 0.529, y: rect.minY + 378)
+}
+
+func dialogImportPoint(in rect: CGRect) -> CGPoint {
+    CGPoint(x: rect.minX + rect.width * 0.650, y: rect.minY + 514)
+}
+
+func captureImage(of rect: CGRect) -> CGImage? {
+    let temporaryURL = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("ima-import-\(UUID().uuidString).png")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+    process.arguments = [
+        "-x",
+        "-R",
+        "\(Int(rect.minX)),\(Int(rect.minY)),\(Int(rect.width)),\(Int(rect.height))",
+        temporaryURL.path,
+    ]
+    do {
+        try process.run()
+        process.waitUntilExit()
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+        guard
+            process.terminationStatus == 0,
+            let source = CGImageSourceCreateWithURL(temporaryURL as CFURL, nil)
+        else {
+            return nil
+        }
+        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    } catch {
+        try? FileManager.default.removeItem(at: temporaryURL)
+        return nil
+    }
+}
+
+func pixelRGBA(in image: CGImage, x: Int, y: Int) -> (UInt8, UInt8, UInt8, UInt8)? {
+    guard
+        x >= 0, y >= 0, x < image.width, y < image.height,
+        let cropped = image.cropping(to: CGRect(x: x, y: y, width: 1, height: 1))
+    else {
+        return nil
+    }
+    var pixel = [UInt8](repeating: 0, count: 4)
+    guard
+        let context = CGContext(
+            data: &pixel,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )
+    else {
+        return nil
+    }
+    context.draw(cropped, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+    return (pixel[0], pixel[1], pixel[2], pixel[3])
+}
+
+func brightness(at point: CGPoint, in image: CGImage, rect: CGRect) -> Double? {
+    let scaleX = Double(image.width) / Double(rect.width)
+    let scaleY = Double(image.height) / Double(rect.height)
+    let x = Int((point.x - rect.minX) * scaleX)
+    let y = Int((point.y - rect.minY) * scaleY)
+    guard let (red, green, blue, _) = pixelRGBA(in: image, x: x, y: y) else {
+        return nil
+    }
+    return (Double(red) + Double(green) + Double(blue)) / 3.0
+}
+
+func importDialogVisible(in rect: CGRect) -> Bool {
+    guard let image = captureImage(of: rect) else {
+        return false
+    }
+    let dimmedContentPoint = CGPoint(x: rect.minX + 369, y: rect.minY + 258)
+    guard let value = brightness(at: dimmedContentPoint, in: image, rect: rect) else {
+        return false
+    }
+    return value < 245
+}
+
 func elements(in axApp: AXUIElement) -> [AXUIElement] {
     windows(in: axApp).flatMap { [$0] + allDescendants(of: $0) }
 }
@@ -284,28 +395,20 @@ func waitUntil(timeoutSeconds: Double, interval: useconds_t = 150_000, _ conditi
 }
 
 func openImportDialog(axApp: AXUIElement, options: Options) -> Bool {
-    if findTextArea(in: axApp) != nil {
-        return true
-    }
-    guard let window = mainWindow(in: axApp), let rect = frame(of: window) else {
+    guard let rect = activateMainWindowRect() else {
         return false
     }
 
-    let uploadPoint = CGPoint(x: rect.maxX - 18, y: rect.minY + 58)
-    click(uploadPoint)
-    usleep(options.delay)
-
-    let menuAxApp = freshAxApp()
-    if let item = findExactText("网页链接", in: menuAxApp), press(item) {
-        return waitUntil(timeoutSeconds: options.dialogTimeout, interval: 80_000) {
-            findTextArea(in: freshAxApp()) != nil
-        }
+    if importDialogVisible(in: rect) {
+        return true
     }
 
-    let menuFallbackPoint = CGPoint(x: rect.maxX - 126, y: rect.minY + 181)
-    click(menuFallbackPoint)
+    click(contentAddPoint(in: rect))
+    usleep(options.delay)
+
+    click(webLinkMenuPoint(in: rect))
     return waitUntil(timeoutSeconds: options.dialogTimeout, interval: 80_000) {
-        findTextArea(in: freshAxApp()) != nil
+        importDialogVisible(in: rect)
     }
 }
 
@@ -314,33 +417,35 @@ func prepareBatch(text batchText: String, options: Options) -> Bool {
         fputs("failed: import dialog not found\n", stderr)
         return false
     }
-    guard let area = findTextArea(in: freshAxApp()) else {
-        fputs("failed: link text area not found\n", stderr)
+    guard let rect = activateMainWindowRect() else {
+        fputs("failed: ima window not found\n", stderr)
         return false
     }
 
-    guard replaceText(batchText, in: area, delay: options.delay) else {
-        fputs("failed: could not enter links\n", stderr)
-        return false
-    }
+    setClipboard(batchText)
+    click(dialogTextPoint(in: rect))
+    usleep(min(options.delay, 80_000))
+    pasteFromClipboard()
     usleep(options.delay)
     return true
 }
 
 func submitPreparedBatch(options: Options, willSubmit: () throws -> Void) throws -> Bool {
-    guard let importButton = findExactText("导入", in: freshAxApp()) else {
+    guard let rect = activateMainWindowRect() else {
+        fputs("failed: ima window not found\n", stderr)
+        return false
+    }
+    let importPoint = dialogImportPoint(in: rect)
+    guard importDialogVisible(in: rect) else {
         fputs("failed: import button not found\n", stderr)
         return false
     }
 
     try willSubmit()
-    guard press(importButton) else {
-        fputs("failed: import button could not be pressed\n", stderr)
-        return false
-    }
+    click(importPoint)
 
     return waitUntil(timeoutSeconds: options.submitTimeout, interval: 180_000) {
-        findTextArea(in: freshAxApp()) == nil
+        !importDialogVisible(in: rect)
     }
 }
 
